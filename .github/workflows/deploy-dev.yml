@@ -122,12 +122,12 @@ jobs:
               -backend-config="key=$TF_STATE_BUCKET_KEY" \
               -backend-config="region=$TF_STATE_BUCKET_REGION" \
               -backend-config="dynamodb_table=$TF_STATE_DYNAMODB_TABLE_NAME"
-        env:
-          TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
-          TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
-          TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
-          TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
-          TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
+        # env:
+        #   TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
+        #   TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
+        #   TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
+        #   TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
+        #   TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
 
       # validates the configuration files in a directory, referring only to the configuration 
       # and not accessing any remote services such as remote state, provider APIs, etc.
@@ -236,12 +236,12 @@ jobs:
               -backend-config="key=$TF_STATE_BUCKET_KEY" \
               -backend-config="region=$TF_STATE_BUCKET_REGION" \
               -backend-config="dynamodb_table=$TF_STATE_DYNAMODB_TABLE_NAME"
-        env:
-          TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
-          TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
-          TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
-          TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
-          TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
+        # env:
+        #   TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
+        #   TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
+        #   TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
+        #   TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
+        #   TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
       
       # validates the configuration files in a directory, referring only to the configuration 
       # and not accessing any remote services such as remote state, provider APIs, etc.
@@ -373,11 +373,11 @@ jobs:
           # terraform apply -auto-approve -input=false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
-          TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
-          TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
-          TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
-          TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
+          # TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
+          # TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
+          # TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
+          # TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
+          # TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
       
       - name: Set prepare-rollback outcome variable
         id: setpreparerollbackoutcomevariable
@@ -454,12 +454,12 @@ jobs:
           # terraform apply rollback.tfplan -auto-approve -input=false 
           terraform apply rollback.tfplan
 
-        env:
-          TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
-          TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
-          TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
-          TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
-          TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
+        # env:
+        #   TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
+        #   TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
+        #   TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
+        #   TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
+        #   TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
       
       - name: create pull request
         id: pullrequest
