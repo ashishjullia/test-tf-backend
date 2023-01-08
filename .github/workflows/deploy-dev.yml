@@ -234,6 +234,18 @@ jobs:
         run: |
           echo "apply-outcome=failure" >> $GITHUB_OUTPUT
 
+      - name: Check gh release count
+        run: |
+          echo "RELEASE_COUNT=$(gh release list | wc -l)" >> $GITHUB_ENV
+
+      - name: Destroy is apply==failure and 0 releases
+        id: destroytf
+        if: steps.apply.outcome == 'failure' && $RELEASE_COUNT == 0
+        run: |
+          terraform destroy -auto-approve
+        env:
+          RELEASE_COUNT: ${{ env.RELEASE_COUNT }}
+      
       - name: If apply successful, create a release
         id: release
         if: steps.apply.outcome == 'success'
