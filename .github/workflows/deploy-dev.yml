@@ -7,7 +7,7 @@ on:
   pull_request:
 
 env:
-  TF_STATE_BUCKET_NAME: "terraform"
+  TF_STATE_BUCKET_NAME: "terraform-ashishjullia"
   TF_STATE_BUCKET_REGION: "us-east-1"
   TF_STATE_DYNAMODB_TABLE_NAME: "tfstate-tf-test-s3-ashish"
   TF_STATE_DYNAMODB_TABLE_REGION: "us-east-1"
@@ -44,7 +44,7 @@ jobs:
               aws s3api create-bucket \
                   --bucket $tfStateBucketName \
                   --region $tfStateBucketRegion
-                  
+
               # not needed if the region is us-east-1
               #--create-bucket-configuration LocationConstraint=$tfStateBucketRegion
 
