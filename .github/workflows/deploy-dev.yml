@@ -239,6 +239,8 @@ jobs:
       - name: Check gh release count
         run: |
           echo "RELEASE_COUNT=$(gh release list | wc -l)" >> $GITHUB_ENV
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Destroy is apply==failure and 0 releases
         id: destroytf
