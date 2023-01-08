@@ -15,6 +15,8 @@ env:
   WORKING_CODE_REPO: "ashishjullia/test-tf-backend"
 
 jobs:
+################################################################ initialize-tf-backend-if-does-not-exists ###############################################################
+
   initialize-tf-backend-if-does-not-exists:
     runs-on: ubuntu-latest
     steps:
@@ -26,7 +28,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
 
       - name: Setup TF backend (Create if it does not exists)
         run: |
@@ -74,14 +75,11 @@ jobs:
                   --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
                   --tags Key=Owner,Value=tf \
                   --output text
+              
+              sleep 40s
           fi
 
-          sleep 50s
-        env:
-          TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
-          TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
-          TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
-          TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
+################################################################ check-tf-code-and-create-plan-and-update-pr ###############################################################
 
   check-tf-code-and-create-plan-and-update-pr:
     needs: initialize-tf-backend-if-does-not-exists
@@ -96,7 +94,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
 
       - name: Get Terraform Version
         run: |
@@ -122,12 +119,6 @@ jobs:
               -backend-config="key=$TF_STATE_BUCKET_KEY" \
               -backend-config="region=$TF_STATE_BUCKET_REGION" \
               -backend-config="dynamodb_table=$TF_STATE_DYNAMODB_TABLE_NAME"
-        # env:
-        #   TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
-        #   TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
-        #   TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
-        #   TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
-        #   TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
 
       # validates the configuration files in a directory, referring only to the configuration 
       # and not accessing any remote services such as remote state, provider APIs, etc.
@@ -137,7 +128,6 @@ jobs:
 
       - name: Generate Terraform Plan
         id: plan
-        # if: github.event_name == 'pull_request'
         if: "steps.init.outcome == 'success' && github.event_name == 'pull_request'"
         run: terraform plan -no-color -input=false
         continue-on-error: true
@@ -177,6 +167,7 @@ jobs:
         if: steps.plan.outcome == 'failure'
         run: exit 1
 
+################################################################ deploy-to-dev ################################################################################
 
   deploy-to-dev:
     needs: initialize-tf-backend-if-does-not-exists
@@ -195,16 +186,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      
       - name: Setup Git
-        # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "<>"
 
       - name: Capture working code
         id: for-release
-        # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/checkout@v3
         with:
           repository: ${{ env.WORKING_CODE_REPO }}
@@ -229,19 +217,11 @@ jobs:
       - name: Terraform Init
         id: init
         run: | 
-          # terraform init
-
           terraform init \
               -backend-config="bucket=$TF_STATE_BUCKET_NAME" \
               -backend-config="key=$TF_STATE_BUCKET_KEY" \
               -backend-config="region=$TF_STATE_BUCKET_REGION" \
               -backend-config="dynamodb_table=$TF_STATE_DYNAMODB_TABLE_NAME"
-        # env:
-        #   TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
-        #   TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
-        #   TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
-        #   TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
-        #   TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
       
       # validates the configuration files in a directory, referring only to the configuration 
       # and not accessing any remote services such as remote state, provider APIs, etc.
@@ -254,7 +234,6 @@ jobs:
         # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           terraform apply -auto-approve -input=false
-          # echo "destroy-outcome=0" >> $GITHUB_OUTPUT
         continue-on-error: true
 
       - name: Set apply outcome variable
@@ -275,8 +254,6 @@ jobs:
         run: |
           terraform destroy -auto-approve
           echo "destroy-outcome=1" >> $GITHUB_OUTPUT
-        # env:
-          # RELEASE_COUNT: ${{ env.RELEASE_COUNT }}
 
       - name: If apply successful, create a release
         id: release
@@ -288,7 +265,8 @@ jobs:
           date '+%Y%m%d%H%M%S' | xargs -t -I % sh -c '{ git tag "release-%"; gh release create "release-%" --generate-notes --target main; }'
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-################################################################################################################################################
+
+################################################################ prepare-rollback ################################################################################
 
   prepare-rollback:
     needs: deploy-to-dev
@@ -308,59 +286,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-
       - name: Setup Git
-        # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         # id: setupgit
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "<>" 
-
-      # - name: Clone Code to 'latest-code' Directory with depth '0'
-      #   id: latest-code
-      #   # if: steps.apply.outcome == 'failure'
-      #   uses: actions/checkout@v3
-      #   with:
-      #     # repository: 
-      #     fetch-depth: '0'
-      #     path: latest-code
-
-      # - uses: actions/upload-artifact@v3
-      #   with:
-      #     name: latest-code
-      #     path: ./latest-code
       
       - name: Clone Code to 'new' Directory
         uses: actions/checkout@v3
         id: new
         if: steps.ghactions.outcome == 'success'
         with:
-          # repository: 
-          # fetch-depth: 'HEAD~1'
           path: new
       
       - name: Setup Terraform Code For Rollback
         id: prepare-intermediate-rollback
         if: steps.new.outcome == 'success'
         run: |
-          # mkdir working-code
-          # aws s3 cp s3://tf-test-s3-ashish/working-code/working-code.zip ./working-code/
-          # latest_release=$(gh release list | awk '{print $1}' | head -1)
-          # gh release list | awk '{print $1}' | head -1 | xargs -t -I % sh -c '{ gh release download % --archive=zip;}'
-          # gh release list | awk '{print $1}' | head -1 | xargs -t -I % sh -c '{ gh release download % --archive=zip; mv terraform-w-rollback-%.zip working-code.zip;}'
-
           gh release list | awk '{print $1}' | head -1 | xargs -t -I % sh -c '{ gh release download % --archive=zip; unzip -q terraform-w-rollback-%.zip; mv terraform-w-rollback-% working-code;}'
           cd working-code
 
-          # unzip -q working-code.zip
-          # rm working-code.zip
-          # git config user.name "GitHub Actions Bot"
-          # git config user.email "<>"
-          # git checkout main
-
           cp ../new/provider.tf .
-          ls -la
-          # terraform init
 
           terraform init \
               -backend-config="bucket=$TF_STATE_BUCKET_NAME" \
@@ -369,15 +315,9 @@ jobs:
               -backend-config="dynamodb_table=$TF_STATE_DYNAMODB_TABLE_NAME"
 
           terraform plan -no-color -input=false -out=rollback.tfplan
-          # terraform init
-          # terraform apply -auto-approve -input=false
+  
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
-          # TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
-          # TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
-          # TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
-          # TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
       
       - name: Set prepare-rollback outcome variable
         id: setpreparerollbackoutcomevariable
@@ -390,6 +330,8 @@ jobs:
           name: working-code
           path: ./working-code
 
+################################################################ rollback ################################################################################
+
   rollback:
     needs: prepare-rollback
     if: needs.prepare-rollback.outputs.prepare-rollback-outcome == 'success'
@@ -397,7 +339,6 @@ jobs:
     environment:
       name: rollback
     steps:
-      # - uses: actions/checkout@v3
       - name: Setup AWS CLI for "gh actions" user
         id: ghactions
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -406,25 +347,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-
       - name: Setup Git
-        # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "<>"
 
-      # - uses: trstringer/manual-approval@v1
-      #   if: steps.rollback.outcome == 'success'
-      #   id: approval
-      #   with:
-      #     secret: ${{ secrets.TOKEN }}
-      #     approvers: ashishjullia
       - name: Clone Code to 'latest-code' Directory with depth '0'
         id: latest-code
-        # if: steps.apply.outcome == 'failure'
         uses: actions/checkout@v3
         with:
-          # repository: 
           fetch-depth: '0'
           path: latest-code
 
@@ -434,16 +365,11 @@ jobs:
           path: ./working-code
 
       - name: Approved Rollback 
-        # if: steps.approval.outcome == 'success'
         id: approved-rollback
         run: |
-          ls -la
           cd working-code
-          ls -la
           rm -rf .terraform
           rm .terraform.lock.hcl 
-          ls -la
-          # terraform init
 
           terraform init \
               -backend-config="bucket=$TF_STATE_BUCKET_NAME" \
@@ -453,58 +379,36 @@ jobs:
 
           # terraform apply rollback.tfplan -auto-approve -input=false 
           terraform apply rollback.tfplan
-
-        # env:
-        #   TF_STATE_BUCKET_NAME: ${{ env.TF_STATE_BUCKET_NAME }}
-        #   TF_STATE_BUCKET_KEY: ${{ env.TF_STATE_BUCKET_KEY }}
-        #   TF_STATE_BUCKET_REGION: ${{ env.TF_STATE_BUCKET_REGION }}
-        #   TF_STATE_DYNAMODB_TABLE_NAME: ${{ env.TF_STATE_DYNAMODB_TABLE_NAME }}
-        #   TF_STATE_DYNAMODB_TABLE_REGION: ${{ env.TF_STATE_DYNAMODB_TABLE_REGION }}
       
       - name: create pull request
         id: pullrequest
         if: steps.approved-rollback.outcome == 'success'
         run: |
-          # ls -la
-          # cd ..
-          # ls -la
           rollback_time=$(date '+%Y-%m-%d-%H-%M-%S')
           
-          # mkdir intermediate-code-$rollback_time
           cd latest-code
           gh release list | awk '{print $1}' | head -1 | xargs -t -I % sh -c '{ gh release download % --archive=zip ; unzip -q terraform-w-rollback-%.zip ; mv terraform-w-rollback-% ../intermediate-code ; rm terraform-w-rollback-%.zip ; }'
           cd ..
-          ls -la
-          # aws s3 cp s3://tf-test-s3-ashish/working-code/working-code.zip ./intermediate-code-$rollback_time/
-
-          # cd intermediate-code
-          # unzip -q working-code.zip
-          # rm working-code.zip
           
-          # cd ..
-
           mkdir to-be-deleted
-          ls -la
+          
           cp -ar ./latest-code/. ./to-be-deleted/
           rm -rf latest-code
-          ls -la
-
+          
           mkdir latest-code
-          ls -la
-          #mv ./latest-code/.* ./to-be-deleted/
           
           mv ./to-be-deleted/.git ./latest-code/
-          ls -la
+          
           cp -ar ./intermediate-code/. ./latest-code/
 
           cd latest-code
-          ls -la
+          
           git checkout -b rollback-at-$rollback_time
-          # git pull
+          
           date > exact-rollback-time
           git add .
           git commit -m "rollback"
           git push origin rollback-at-$rollback_time
           gh pr create -B main -H rollback-at-$rollback_time --title "Merge rollback-at-$rollback_time into main" --body 'Created by Github action'
         env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
