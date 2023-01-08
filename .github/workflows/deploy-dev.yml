@@ -240,11 +240,11 @@ jobs:
 
       - name: Destroy is apply==failure and 0 releases
         id: destroytf
-        if: steps.apply.outcome == 'failure' && $RELEASE_COUNT == 0
+        if: steps.apply.outcome == 'failure' && ${{ env.RELEASE_COUNT }} == 0
         run: |
           terraform destroy -auto-approve
-        env:
-          RELEASE_COUNT: ${{ env.RELEASE_COUNT }}
+        # env:
+          # RELEASE_COUNT: ${{ env.RELEASE_COUNT }}
       
       - name: If apply successful, create a release
         id: release
