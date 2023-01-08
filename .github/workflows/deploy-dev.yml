@@ -170,6 +170,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       apply-outcome: ${{ steps.setapplyoutcomevariable.outputs.apply-outcome }}
+      destroy-outcome: ${{ steps.destroytf.outputs.destroy-outcome }}
     steps:
       - uses: actions/checkout@v3
       - name: Setup AWS CLI for "gh actions" user
@@ -226,6 +227,7 @@ jobs:
         # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           terraform apply -auto-approve -input=false
+          # echo "destroy-outcome=0" >> $GITHUB_OUTPUT
         continue-on-error: true
 
       - name: Set apply outcome variable
@@ -243,6 +245,7 @@ jobs:
         if: steps.apply.outcome == 'failure' && ${{ env.RELEASE_COUNT }} == 0
         run: |
           terraform destroy -auto-approve
+          echo "destroy-outcome=1" >> $GITHUB_OUTPUT
         # env:
           # RELEASE_COUNT: ${{ env.RELEASE_COUNT }}
       
@@ -260,7 +263,7 @@ jobs:
 
   prepare-rollback:
     needs: deploy-to-dev
-    if: needs.deploy-to-dev.outputs.apply-outcome == 'failure'
+    if: needs.deploy-to-dev.outputs.apply-outcome == 'failure' && needs.deploy-to-dev.outputs.destroy-outcome != 1
     runs-on: ubuntu-latest
     environment:
       name: prepare-rollback
