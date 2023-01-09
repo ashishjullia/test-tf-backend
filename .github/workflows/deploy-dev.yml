@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "README.md"
   pull_request:
+    paths-ignore:
+      - "README.md"
 
 env:
   TF_STATE_BUCKET_NAME: "terraform-ashishjullia"
@@ -12,7 +16,7 @@ env:
   TF_STATE_BUCKET_REGION: "us-east-1"
   TF_STATE_DYNAMODB_TABLE_NAME: "tfstate-tf-test-s3-ashish"
   TF_STATE_DYNAMODB_TABLE_REGION: "us-east-1"
-  WORKING_CODE_REPO: "ashishjullia/test-tf-backend"
+  WORKING_CODE_REPO: ${{ github.repository }}
 
 jobs:
 ################################################################ initialize-tf-backend-if-does-not-exists ###############################################################
