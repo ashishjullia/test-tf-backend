@@ -8,6 +8,13 @@ on:
       - 'destroy-dev-*'
   # pull_request:
 
+env:
+  TF_STATE_BUCKET_NAME: "terraform-ashishjullia"
+  TF_STATE_BUCKET_KEY: "test-tf-backend/terraform.tfstate"
+  TF_STATE_BUCKET_REGION: "us-east-1"
+  TF_STATE_DYNAMODB_TABLE_NAME: "tfstate-tf-test-s3-ashish"
+  TF_STATE_DYNAMODB_TABLE_REGION: "us-east-1"
+
 jobs:
   destroy:
     runs-on: ubuntu-latest
@@ -34,7 +41,12 @@ jobs:
 
       - name: Terraform Init
         id: init
-        run: terraform init
+        run: |
+            terraform init \
+              -backend-config="bucket=$TF_STATE_BUCKET_NAME" \
+              -backend-config="key=$TF_STATE_BUCKET_KEY" \
+              -backend-config="region=$TF_STATE_BUCKET_REGION" \
+              -backend-config="dynamodb_table=$TF_STATE_DYNAMODB_TABLE_NAME"
 
       # validates the configuration files in a directory, referring only to the configuration 
       # and not accessing any remote services such as remote state, provider APIs, etc.
