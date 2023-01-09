@@ -6,10 +6,13 @@ on:
       - main
     paths-ignore:
       - "README.md"
-      - "Hello.txt"
+      - "assets/*"
+      - ".github/workflows/destroy-dev.yml"
   pull_request:
     paths-ignore:
       - "README.md"
+      - "assets/*"
+      - ".github/workflows/destroy-dev.yml"
 
 env:
   TF_STATE_BUCKET_NAME: "terraform-ashishjullia"
